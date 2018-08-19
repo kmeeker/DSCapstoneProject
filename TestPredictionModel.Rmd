@@ -1,0 +1,140 @@
+---
+title: "Prediction Model"
+author: "Kirsten Meeker"
+date: "August 7, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+source("PredictionModel.R")
+source("my_removePunctuation.R")
+```
+
+## R Markdown
+
+Tasks to accomplish
+
+Build a predictive model based on the previous data modeling steps - you may combine the models in any way you think is appropriate.
+Evaluate the model for efficiency and accuracy - use timing software to evaluate the computational complexity of your model. Evaluate the model accuracy using different metrics like perplexity, accuracy at the first word, second word, and third word.
+Questions to consider
+
+How does the model perform for different choices of the parameters and size of the model?
+How much does the model slow down for the performance you gain?
+Does perplexity correlate with the other measures of accuracy?
+Can you reduce the size of the model (number of parameters) without reducing performance
+
+## Create train, test, & validate samples from the larger files
+```{r sample_data}
+library(R.utils)
+
+div = 100
+indir="data/en_US/"
+file="en_US.twitter.txt"
+nlines=countLines(paste0(indir, file))
+outdir="data/en_US/train/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+outdir="data/en_US/test/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+outdir="data/en_US/validate/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+
+file="en_US.blogs.txt"
+nlines=countLines(paste0(indir, file))
+outdir="data/en_US/train/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+outdir="data/en_US/test/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+outdir="data/en_US/validate/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+
+file="en_US.news.txt"
+nlines=countLines(paste0(indir, file))
+outdir="data/en_US/train/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+outdir="data/en_US/test/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+outdir="data/en_US/validate/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+```
+
+
+```{r train_prediction_model, message=FALSE}
+library(text2vec)
+library(tokenizers)
+library(stringr)
+
+t1 = Sys.time()
+ 
+it_files <- idir("data/en_US/train")
+
+it_train <- itoken(it_files, preprocessor = clean_text, tokenizer = word_tokenizer, pos_keep=c("PUNCT"))
+
+vocab = create_vocabulary(it_train, ngram = c(1L, 3L))
+#vocab3 = create_vocabulary(it_train, ngram = c(3L, 3L))
+
+print(difftime(Sys.time(), t1, units = 'sec'))
+print(vocab)
+```
+
+
+```{r test_prediction_model, message=FALSE, eval=FALSE}
+con <- file("wk3.txt", "r")
+
+while ( length(line <- readLines(con,n=1))>0 ) {
+    
+    line <- clean_text(line)
+    words <- unlist(word_tokenizer(line,pos_keep=c("PUNCT")))
+    
+    for (i in 1:(length(words)-1)) {
+        
+        voc <- rank_next(vocab=vocab, first=words[i], second=words[i+1])
+        print(paste("correct next wd & rank:", words[i+1],voc$term_count))
+        
+        bi <- top_ranked_next(vocab=vocab, first=words[i])
+        out <- data.frame(term=bi$term, term_count=bi$term_count)
+        print(head(out))
+        
+        # unknown next word
+        next_wd <- predict_next(vocab=vocab, first=words[i], vocab3=vocab3, n=5, lo_prob_cutoff=0.1)
+
+        voc <- rank_next(vocab=vocab, first=words[i], second=next_wd$wd)
+        out <- data.frame(term=voc$term, term_count=voc$term_count, prob=signif(next_wd$prob,2))
+        print(out)
+        cat('\n')
+    }
+}
+close(con)
+```
+
+### Week 4 quiz
+```{r wk4_quiz, message=FALSE}
+con <- file("wk4_quiz_prefix.txt", "r")
+con2 <- file("wk4_quiz_answers.txt", "r")
+
+while ( length(line <- readLines(con,n=1))>0 ) {
+    line <- clean_text(line)
+    phrase <- unlist(word_tokenizer(line,pos_keep=c("PUNCT")))
+    n <- length(phrase)
+    
+    line2 <- readLines(con2,n=1)
+    line2 <- clean_text(line2)
+    answers <- unlist(word_tokenizer(line2,pos_keep=c("PUNCT")))
+    
+    ranks <- rank_next(vocab=vocab, first=phrase[n], second=answers)
+    print( paste( paste(phrase,collapse=' ') ,answers[1]) )
+    print(ranks)
+}
+close(con)
+close(con2)
+```
+

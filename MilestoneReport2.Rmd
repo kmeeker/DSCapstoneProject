@@ -1,0 +1,128 @@
+---
+title: "Exploration of Coursera-SwiftKey Text Data"
+author: "Kirsten Meeker"
+date: "July 22, 2018"
+output: html_document
+---
+
+Tasks to accomplish
+
+    1. Exploratory analysis - perform a thorough exploratory analysis of the data, understanding the distribution of words and relationship between the words in the corpora.
+    2. Understand frequencies of words and word pairs - build figures and tables to understand variation in the frequencies of words and word pairs in the data.
+    
+    1. Build basic n-gram model - using the exploratory analysis you performed, build a basic n-gram model for predicting the next word based on the previous 1, 2, or 3 words.
+    2. Build a model to handle unseen n-grams - in some cases people will want to type a combination of words that does not appear in the corpora. Build a model to handle cases where a particular n-gram isn't observed.
+    
+Questions to consider
+
+    1. Some words are more frequent than others - what are the distributions of word frequencies?
+    2. What are the frequencies of 2-grams and 3-grams in the dataset?
+    3. How many unique words do you need in a frequency sorted dictionary to cover 50% of all word instances in the language? 90%?
+    4. How do you evaluate how many of the words come from foreign languages?
+    5. Can you think of a way to increase the coverage -- identifying words that may not be in the corpora or using a smaller number of words in the dictionary to cover the same number of phrases?
+    
+    1. How can you efficiently store an n-gram model (think Markov Chains)?
+    2. How can you use the knowledge about word frequencies to make your model smaller and more efficient?
+    3. How many parameters do you need (i.e. how big is n in your n-gram model)?
+    4. Can you think of simple ways to "smooth" the probabilities (think about giving all n-grams a non-zero probability even if they aren't observed in the data) ?
+    5. How do you evaluate whether your model is any good?
+    6. How can you use backoff models to estimate the probability of unobserved n-grams?
+    Stats for Large Numbers of Rare Events:
+    --Determine how much "belief tax" to withhold
+    --Assess this "belief tax" against the counts (and probability estimates) of observed events
+    --Hand out the tax to unseen events (either as a whole, or individually if we can enumerate them)
+    
+    
+    The Good-Turing method for estimating the size of the belief tax (by counting how many event-types occur just once) is generally pretty reliable -- as long as there's a reasonable number of such event-types.
+    
+    Good-Turing
+    re-estimate the amount of probability
+mass to assign to Ngrams with low counts by looking
+at the number of Ngrams of higher counts
+
+The proportional-allocation method of assessing the tax on observed events is imperfect, but it's usually not a whole lot worse in practice than other approaches, and it's very simple.
+
+  
+  Tips, tricks, and hints  
+    object.size(): this function reports the number of bytes that an R object occupies in memory
+    Rprof(): this function runs the profiler in R that can be used to determine where bottlenecks in your function may exist. The profr package (available on CRAN) provides some additional tools for visualizing and summarizing profiling data.
+    gc(): this function runs the garbage collector to retrieve unused RAM for R. In the process it tells you how much memory is currently being used by R.
+    
+    
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+source("tidy_data.R")
+source("text_stats.R")
+```
+
+
+## create some samples from the larger files
+```{r sample_data}
+sample_file(dir="data/en_US/",filename="en_US.twitter.txt",sample_size=500)
+sample_file(dir="data/en_US/",filename="en_US.blogs.txt",sample_size=500)
+sample_file(dir="data/en_US/",filename="en_US.news.txt",sample_size=500)
+```
+
+## read data files a chunk at a time (for efficiency) and create corpus
+```{r twitter_data, message=FALSE}
+corpus <- create_corpus(dir="data/en_US/", filename="sample_en_US.twitter.txt", read_chunk=50) 
+```
+
+
+## explore twitter data
+In order to compute probabilities for the Markov chain we need to know
+the count of n-grams which start with an entered word.
+
+If there is no n-gram starting with a word, a next word can be selected from the corpus or a language dictionary. In order to compute the probability of each word we'll need their frequencies and total number.
+
+
+```{r explore_twitter_data, message=FALSE}
+strwrap(corpus[[1]]) # print contents
+print(paste("number of lines: ",length(corpus))) # documents are lines
+
+# bag of words
+wordTDM <- TDM(corpus)
+wordFreq <- word_freqs(wordTDM)   
+term_summary(wordTDM, wordFreq)
+
+# 2-gram
+ng2TDM <- TDM(corpus, min_ngram=2, max_ngram=2)
+ng2Freq <- word_freqs(ng2TDM)
+term_summary(ng2TDM, ng2Freq)
+```
+
+
+# Do the same for the blogs data
+```{r explore_blogs_data, message=FALSE, eval=TRUE}
+corpus <- create_corpus(dir="data/en_US/", filename="sample_en_US.blogs.txt", read_chunk=50) 
+strwrap(corpus[[1]]) # print contents
+print(paste("number of lines: ",length(corpus))) # documents are lines
+
+# bag of words
+wordTDM <- TDM(corpus)
+wordFreq <- word_freqs(wordTDM)   
+term_summary(wordTDM, wordFreq)
+
+# 2-gram
+ng2TDM <- TDM(corpus, min_ngram=2, max_ngram=2)
+ng2Freq <- word_freqs(ng2TDM)
+term_summary(ng2TDM, ng2Freq)
+```
+   
+
+# Do the same for the news data
+```{r explore_news_data, message=FALSE, eval=TRUE}
+corpus <- create_corpus(dir="data/en_US/", filename="sample_en_US.news.txt", read_chunk=50) 
+strwrap(corpus[[1]]) # print contents
+print(paste("number of lines: ",length(corpus))) # documents are lines
+
+# bag of words
+wordTDM <- TDM(corpus)
+wordFreq <- word_freqs(wordTDM)   
+term_summary(wordTDM, wordFreq)
+
+# 2-gram
+ng2TDM <- TDM(corpus, min_ngram=2, max_ngram=2)
+ng2Freq <- word_freqs(ng2TDM)
+term_summary(ng2TDM, ng2Freq)
+```

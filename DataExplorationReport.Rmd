@@ -1,0 +1,37 @@
+---
+title: "Exploration of Coursera-SwiftKey Text Dat"
+author: "Kirsten Meeker"
+date: "July 18, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+source("tidy_data.R")
+```
+
+
+```{r explore_data}
+sample_file(dir="data/en_US/",filename="en_US.twitter.txt",sample_size=10)
+
+countLines(dir="data/en_US/",filename="en_US.twitter.txt")
+
+m1 <- max_line_length(dir="data/en_US/",filename="en_US.blogs.txt")
+m2 <- max_line_length(dir="data/en_US/",filename="en_US.news.txt")
+m3 <- max_line_length(dir="data/en_US/",filename="en_US.twitter.txt")
+print(paste("num lines in en_US.blogs.txt:",m1))
+print(paste("num lines in en_US.news.txt:",m2))
+print(paste("num lines in en_US.twitter.txt:",m3))
+
+nlove <- find_regex(dir="data/en_US/",filename="en_US.twitter.txt",regex="love")
+nhate <- find_regex(dir="data/en_US/",filename="en_US.twitter.txt",regex="hate")
+print(paste("ratio love/hate lines:",nlove/nhate))
+
+nbiostats <- find_regex(dir="data/en_US/",filename="en_US.twitter.txt",regex="biostats")
+con <- file("data/en_US/regex_biostats_en_US.twitter.txt", "r")
+readLines(con)
+close(con)
+
+regex <-  "^A computer once beat me at chess, but it was no match for me at kickboxing$"
+nexact_match <- find_regex(dir="data/en_US/",filename="en_US.twitter.txt",regex=regex)
+```

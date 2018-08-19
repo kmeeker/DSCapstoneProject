@@ -1,0 +1,243 @@
+---
+title: "Prediction Model"
+author: "Kirsten Meeker"
+date: "August 7, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+source("PredictionModel.R")
+```
+
+## R Markdown
+
+Tasks to accomplish
+
+Build a predictive model based on the previous data modeling steps - you may combine the models in any way you think is appropriate.
+Evaluate the model for efficiency and accuracy - use timing software to evaluate the computational complexity of your model. Evaluate the model accuracy using different metrics like perplexity, accuracy at the first word, second word, and third word.
+Questions to consider
+
+How does the model perform for different choices of the parameters and size of the model?
+How much does the model slow down for the performance you gain?
+Does perplexity correlate with the other measures of accuracy?
+Can you reduce the size of the model (number of parameters) without reducing performance
+
+## Create train, test, & validate samples from the larger files
+```{r sample_data}
+library(R.utils)
+
+div = 100
+indir="data/en_US/"
+file="en_US.twitter.txt"
+nlines=countLines(paste0(indir, file))
+outdir="data/en_US/train/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+outdir="data/en_US/test/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+outdir="data/en_US/validate/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+
+file="en_US.blogs.txt"
+nlines=countLines(paste0(indir, file))
+outdir="data/en_US/train/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+outdir="data/en_US/test/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+outdir="data/en_US/validate/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+
+file="en_US.news.txt"
+nlines=countLines(paste0(indir, file))
+outdir="data/en_US/train/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+outdir="data/en_US/test/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+outdir="data/en_US/validate/"
+if (!file.exists(paste0(outdir,file)))
+sample_file(indir=indir, outdir=outdir, file=file, sample_size=nlines/div)
+```
+
+
+```{r prediction_model, message=FALSE}
+library(text2vec)
+library(tokenizers)
+library(stringr)
+
+t1 = Sys.time()
+ 
+#it_files <- ifiles("data/en_US/train/en_US.twitter.txt")
+it_files <- idir("data/en_US/train")
+#it_train <- itoken(it_files, tolower, tokenizer = tokenizers::tokenize_tweets)
+#it_train <- itoken(it_files, tolower, tokenizer = tokenizers::tokenize_ngrams, n = 2, n_min = 1)
+it_train <- itoken(it_files, tolower, tokenizer = word_tokenizer, pos_keep=c("PUNCT", "DET", "ADP", "SYM", "PART", "SCONJ", "CCONJ", "AUX", "X", "INTJ"))
+
+vocab = create_vocabulary(it_train, ngram = c(1L, 2L))
+vocab3 = create_vocabulary(it_train, ngram = c(3L, 3L))
+
+#vectorizer = vocab_vectorizer(vocab)
+#dtm = create_dtm(it_train, vectorizer)
+#tf <- data.frame(term=vocab$term,freq=vocab$term_count)
+
+print(difftime(Sys.time(), t1, units = 'sec'))
+
+print(vocab)
+```
+
+1. beer
+```{r, message=FALSE}
+first="of"
+second=c("cheese","beer","soda","pretzels")
+rank_next(vocab=vocab,first=first,second=second)
+predict_next(vocab=vocab, first=first, vocab3=vocab3)
+```
+
+2. x world
+```{r, message=FALSE}
+first="the"
+second=c("world","most","best","universe")
+rank_next(vocab=vocab,first=first,second=second)
+```
+
+3. happiest
+```{r, message=FALSE}
+first="the"
+second=c("saddest","smelliest","bluest","happiest")
+rank_next(vocab=vocab,first=first,second=second)
+```
+
+4. x players
+```{r, message=FALSE}
+first="the"
+second=c("players","referees","crowd","defense")
+rank_next(vocab=vocab,first=first,second=second)
+```
+
+5. beach
+```{r, message=FALSE}
+first="the"
+second=c("beach","grocery","mall","movies")
+rank_next(vocab=vocab,first=first,second=second)
+```
+
+6. x way
+```{r, message=FALSE}
+first="my"
+second=c("motorcycle","way","horse","phone")
+rank_next(vocab=vocab,first=first,second=second)
+```
+
+7. time
+```{r, message=FALSE}
+first="some"
+second=c("weeks","thing","time","years")
+rank_next(vocab=vocab,first=first,second=second)
+```
+
+8. fingers
+```{r, message=FALSE}
+first="little"
+second=c("ears","eyes","fingers","toes")
+rank_next(vocab=vocab,first=first,second=second)
+```
+
+9. bad
+```{r, message=FALSE}
+rank_next(vocab=vocab,first="the",second=c("sad","hard","bad","worse"))
+```
+
+10. x insane
+```{r, message=FALSE}
+rank_next(vocab=vocab,first="be",second=c("insensitive","insane","callous","asleep"))
+```
+
+
+> rank_next(vocab=vocab,first="i'd",second="give")
+Number of docs: 42698 
+0 stopwords:  ... 
+ngram_min = 1; ngram_max = 2 
+Vocabulary: 
+       term term_count doc_count
+1: i'd_give          1         1
+x
+
+> rank_next(vocab=vocab,first="his",second="spiritual")
+Number of docs: 42698 
+0 stopwords:  ... 
+ngram_min = 1; ngram_max = 2 
+Vocabulary: 
+            term term_count doc_count
+1: his_spiritual          2         2
+x
+
+> predict_next(vocab=vocab, first="this", vocab3=vocab3, n=10)
+ [1] "is"             "discrimination" "woman"          "may"            "wonder"        
+ [6] "weekend"        "ruled"          "heat"           "book"           "half"         
+ 
+  predict_next(vocab=vocab, first="your", vocab3=vocab3, n=20)
+ [1] "do"            "lunch"         "wine"          "s"             "ear"          
+ [6] "hunger"        "neck"          "downtown"      "bil"           "questions"    
+[11] "biggest"       "head"          "own"           "image"         "body"         
+[16] "1"             "midwest"       "relationships" "key"           "living"       
+x
+
+> rank_next(vocab=vocab,first="a",second="picture")
+Number of docs: 42698 
+0 stopwords:  ... 
+ngram_min = 1; ngram_max = 2 
+Vocabulary: 
+        term term_count doc_count
+1: a_picture         42        42
+
+> rank_next(vocab=vocab,first="the",second="case")
+Number of docs: 42698 
+0 stopwords:  ... 
+ngram_min = 1; ngram_max = 2 
+Vocabulary: 
+       term term_count doc_count
+1: the_case         76        75
+x
+
+predict_next(vocab=vocab, first="each", vocab3=vocab3, n=50)
+ [1] "other"       "one"         "of"          "in"          "year"        "emotion"    
+ [7] "concert"     "and"         "the"         "u"           "time"        "day"        
+[13] "container"   "minimal"     "otherâ"      "online"      "wonton"      "person"     
+[19] "tournament"  "ticket"      "village"     "samba"       "page"        "uce"        
+[25] "participant" "customized"  "or"          "character"   "at"          "17.3"       
+[31] "served"      "source"      "night"       "side"        "â"           "restaurant" 
+[37] "district"    "to"          "thump"       "hand"        "work"        "season"     
+[43] "thereafter"  "dog"         "book"        "schering"    "other.â"     "category"   
+[49] "song"        "summer"     
+
+> rank_next(vocab=vocab,first="the",second="top")
+Number of docs: 42698 
+0 stopwords:  ... 
+ngram_min = 1; ngram_max = 2 
+Vocabulary: 
+      term term_count doc_count
+1: the_top        130       125
+
+> rank_next(vocab=vocab,first="playing",second="outside")
+Number of docs: 42698 
+0 stopwords:  ... 
+ngram_min = 1; ngram_max = 2 
+Vocabulary: 
+              term term_count doc_count
+1: playing_outside          1         1
+
+vocab[which(vocab$term=="adam"),]
+Number of docs: 42698 
+0 stopwords:  ... 
+ngram_min = 1; ngram_max = 2 
+Vocabulary: 
+   term term_count doc_count
+1: adam         36        32
+x

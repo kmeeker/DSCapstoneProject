@@ -1,0 +1,73 @@
+---
+title: "Exploration of Coursera-SwiftKey Text Data"
+author: "Kirsten Meeker"
+date: "Aug 5, 2018"
+output: html_document
+---
+
+Tasks to accomplish
+
+    1. Exploratory analysis - perform a thorough exploratory analysis of the data, understanding the distribution of words and relationship between the words in the corpora.
+    
+    2. Understand frequencies of words and word pairs - build figures and tables to understand variation in the frequencies of words and word pairs in the data.
+    
+Questions to consider
+
+    1. Some words are more frequent than others - what are the distributions of word frequencies? 
+    see histogram and word clouds created using word frequencies below
+    
+    2. What are the frequencies of 2-grams and 3-grams in the dataset? 
+    see histogram and word clouds created using n-gram frequencies below
+    
+    3. How do you evaluate how many of the words come from foreign languages?
+    I've converted to "latin1", "UTF-8" when creating the corpus. Some things to try are:
+    comparing with a reference dictionary, Google's cld libraries, Twitter for twitter sample.
+    
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+source("text_stats3.R")
+```
+
+
+## Create some samples from the larger files 
+```{r sample_data}
+sample_file(dir="data/en_US/",filename="en_US.twitter.txt",sample_size=10000)
+sample_file(dir="data/en_US/",filename="en_US.blogs.txt",sample_size=10000)
+sample_file(dir="data/en_US/",filename="en_US.news.txt",sample_size=10000)
+```
+
+
+## Explore twitter data
+In order to compute probabilities for the Markov chain we need to know
+the count of n-grams which start with an entered word.
+
+If there is no n-gram starting with a word, a next word can be selected from the corpus or a language dictionary. In order to compute the probability of each word we'll need their frequencies and total number.
+
+
+```{r explore_twitter_data, message=FALSE}
+library(text2vec)
+library(SnowballC)
+library(tm)
+library(tokenizers)
+
+num_lines <- read.table(pipe("C:\\Rtools\\bin\\wc -l .\\data\\en_US\\en_US.twitter.txt"))[[1]]
+
+print(paste("total number of lines: ",num_lines)) # documents are lines
+
+# Example of stemming tokenizer
+ stem_tokenizer =function(x) {
+   lapply(word_tokenizer(x), SnowballC::wordStem, language="en")
+ }
+ 
+ # custom tokenizer
+ my_tokenizer = function(x) {
+     tokenize_words(x,strip_numeric=TRUE)
+ }
+
+it_files <- ifiles("data/en_US/en_US.twitter.txt")
+it_tokens <- itoken(it_files, tolower, my_tokenizer)
+vocab = create_vocabulary(it_tokens)
+
+print(vocab)
+```
+
